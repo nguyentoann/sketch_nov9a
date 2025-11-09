@@ -77,7 +77,7 @@ echo java -cp "esp32-server.jar;lib\*" com.esp32.server.EmbeddedServer %%*
 (
 echo @echo off
 echo set PORT=%%1
-echo if "%%PORT%%"=="" set PORT=8080
+echo if "%%PORT%%"=="" set PORT=8085
 echo cd /d "%%~dp0"
 echo java -cp "esp32-server.jar;lib\*" com.esp32.server.EmbeddedServer %%PORT%%
 ) > deploy\start.bat

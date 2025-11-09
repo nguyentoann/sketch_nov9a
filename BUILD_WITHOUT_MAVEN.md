@@ -48,19 +48,19 @@ deploy/
 ### Linux/Mac:
 ```bash
 cd deploy
-./start.sh 8080
+./start.sh 8085
 ```
 
 ### Windows:
 ```batch
 cd deploy
-start.bat 8080
+start.bat 8085
 ```
 
 ### Manual (Any OS):
 ```bash
 cd deploy
-java -cp "esp32-server.jar:lib/*" com.esp32.server.EmbeddedServer 8080
+java -cp "esp32-server.jar:lib/*" com.esp32.server.EmbeddedServer 8085
 ```
 
 ## Requirements

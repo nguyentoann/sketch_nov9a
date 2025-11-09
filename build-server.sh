@@ -104,7 +104,7 @@ cp -r target/webapp deploy/
 # Create run script
 cat > deploy/start.sh << 'RUNSCRIPT'
 #!/bin/bash
-PORT=${1:-8080}
+PORT=${1:-8085}
 cd "$(dirname "$0")"
 java -cp "esp32-server.jar:lib/*" com.esp32.server.EmbeddedServer $PORT
 RUNSCRIPT
@@ -121,7 +121,7 @@ After=network.target
 Type=simple
 User=root
 WorkingDirectory=/root/sketch_nov9a/deploy
-ExecStart=/usr/bin/java -cp "esp32-server.jar:lib/*" com.esp32.server.EmbeddedServer 8080
+ExecStart=/usr/bin/java -cp "esp32-server.jar:lib/*" com.esp32.server.EmbeddedServer 8085
 Restart=always
 RestartSec=10
 
@@ -148,7 +148,7 @@ echo "  ./start.sh [port]"
 echo ""
 echo "Or manually:"
 echo "  cd deploy"
-echo "  java -cp 'esp32-server.jar:lib/*' com.esp32.server.EmbeddedServer 8080"
+echo "  java -cp 'esp32-server.jar:lib/*' com.esp32.server.EmbeddedServer 8085"
 echo ""
 echo "To install as systemd service (optional):"
 echo "  sudo cp deploy/esp32-server.service /etc/systemd/system/"

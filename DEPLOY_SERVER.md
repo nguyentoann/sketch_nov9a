@@ -23,19 +23,19 @@ This will:
 ### Option 1: Direct Run
 ```bash
 cd deploy
-./start.sh 8080
+./start.sh 8085
 ```
 
 ### Option 2: Manual Run
 ```bash
 cd deploy
-java -cp "esp32-server.jar:lib/*" com.esp32.server.EmbeddedServer 8080
+java -cp "esp32-server.jar:lib/*" com.esp32.server.EmbeddedServer 8085
 ```
 
 ### Option 3: Background Process
 ```bash
 cd deploy
-nohup ./start.sh 8080 > server.log 2>&1 &
+nohup ./start.sh 8085 > server.log 2>&1 &
 ```
 
 ### Option 4: Systemd Service (Recommended for Production)
@@ -81,7 +81,7 @@ deploy/
 
 ## Port Configuration
 
-Default port is 8080. To change:
+Default port is 8085. To change:
 
 1. **Command line:**
    ```bash
@@ -97,22 +97,22 @@ If you need to open the port:
 
 ```bash
 # UFW
-sudo ufw allow 8080/tcp
+sudo ufw allow 8085/tcp
 
 # firewalld
-sudo firewall-cmd --permanent --add-port=8080/tcp
+sudo firewall-cmd --permanent --add-port=8085/tcp
 sudo firewall-cmd --reload
 
 # iptables
-sudo iptables -A INPUT -p tcp --dport 8080 -j ACCEPT
+sudo iptables -A INPUT -p tcp --dport 8085 -j ACCEPT
 ```
 
 ## Access the Server
 
 Once running, access:
-- Dashboard: `http://your-server-ip:8080/`
-- Sensor Data: `http://your-server-ip:8080/sensor-data.html`
-- API: `http://your-server-ip:8080/api/`
+- Dashboard: `http://your-server-ip:8085/`
+- Sensor Data: `http://your-server-ip:8085/sensor-data.html`
+- API: `http://your-server-ip:8085/api/`
 
 ## Troubleshooting
 
@@ -154,11 +154,11 @@ sudo yum install java-11-openjdk-devel
 
 ### Port Already in Use
 
-Check what's using port 8080:
+Check what's using port 8085:
 ```bash
-sudo netstat -tulpn | grep 8080
+sudo netstat -tulpn | grep 8085
 # or
-sudo lsof -i :8080
+sudo lsof -i :8085
 ```
 
 Kill the process or use a different port.
@@ -169,7 +169,7 @@ Check logs:
 ```bash
 # If running directly
 cd deploy
-java -cp "esp32-server.jar:lib/*" com.esp32.server.EmbeddedServer 8080
+java -cp "esp32-server.jar:lib/*" com.esp32.server.EmbeddedServer 8085
 
 # If using systemd
 sudo journalctl -u esp32-server -n 50
@@ -189,6 +189,6 @@ sudo systemctl restart esp32-server
 # Or stop old process and start new one
 pkill -f EmbeddedServer
 cd deploy
-./start.sh 8080 &
+./start.sh 8085 &
 ```
 
