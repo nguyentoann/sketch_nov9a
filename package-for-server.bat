@@ -13,6 +13,34 @@ REM Copy all deployment files
 echo Copying deployment files...
 xcopy /E /I /Y deploy\* server-package\ >nul
 
+REM Create Linux start script
+echo Creating Linux start script...
+(
+echo #!/bin/bash
+echo PORT=${1:-8085}
+echo cd "$(dirname "$0")"
+echo java -cp "esp32-server.jar:lib/*" com.esp32.server.EmbeddedServer $PORT
+) > server-package\start.sh
+
+REM Create systemd service file
+echo Creating systemd service file...
+(
+echo [Unit]
+echo Description=ESP32 Sensor Server
+echo After=network.target
+echo.
+echo [Service]
+echo Type=simple
+echo User=root
+echo WorkingDirectory=/root/sketch_nov9a/server-package
+echo ExecStart=/usr/bin/java -cp "esp32-server.jar:lib/*" com.esp32.server.EmbeddedServer 8085
+echo Restart=always
+echo RestartSec=10
+echo.
+echo [Install]
+echo WantedBy=multi-user.target
+) > server-package\esp32-server.service
+
 REM Create README for server
 (
 echo ESP32 Sensor Server - Deployment Package
@@ -44,18 +72,18 @@ REM Create tar.gz archive (if tar is available)
 where tar >nul 2>&1
 if %errorlevel% equ 0 (
     echo Creating tar.gz archive...
-    cd server-package
-    tar -czf ..\esp32-server-deploy.tar.gz *
-    cd ..
+    tar -czf esp32-server-deploy.tar.gz server-package
     echo.
     echo Archive created: esp32-server-deploy.tar.gz
+    echo   (Extracts to: server-package/)
     echo.
 ) else (
     echo.
     echo Note: tar not found. Creating ZIP archive instead...
-    powershell -Command "Compress-Archive -Path server-package\* -DestinationPath esp32-server-deploy.zip -Force"
+    powershell -Command "Compress-Archive -Path server-package -DestinationPath esp32-server-deploy.zip -Force"
     echo.
     echo Archive created: esp32-server-deploy.zip
+    echo   (Extracts to: server-package/)
     echo.
 )
 
