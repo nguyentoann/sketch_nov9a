@@ -52,12 +52,11 @@ REM Build classpath (include all Jetty dependencies)
 set CLASSPATH=target\lib\servlet-api-4.0.1.jar;target\lib\gson-2.10.1.jar;target\lib\jetty-util-9.4.51.v20230217.jar;target\lib\jetty-io-9.4.51.v20230217.jar;target\lib\jetty-http-9.4.51.v20230217.jar;target\lib\jetty-xml-9.4.51.v20230217.jar;target\lib\jetty-server-9.4.51.v20230217.jar;target\lib\jetty-servlet-9.4.51.v20230217.jar;target\lib\jetty-webapp-9.4.51.v20230217.jar;target\lib\jetty-util-ajax-9.4.51.v20230217.jar
 
 echo Compiling Java sources...
-for /r src\main\java %%f in (*.java) do (
-    javac -d target\classes -cp "%CLASSPATH%" "%%f"
-    if errorlevel 1 (
-        echo Compilation failed!
-        exit /b 1
-    )
+REM Compile all Java files at once to handle dependencies
+javac -d target\classes -cp "%CLASSPATH%" -sourcepath src\main\java src\main\java\com\esp32\model\*.java src\main\java\com\esp32\service\*.java src\main\java\com\esp32\filter\*.java src\main\java\com\esp32\servlet\*.java src\main\java\com\esp32\server\*.java
+if errorlevel 1 (
+    echo Compilation failed!
+    exit /b 1
 )
 
 echo Copying webapp resources...
