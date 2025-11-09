@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 Sensor Data</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            color: white;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255,255,255,0.3);
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .sensor-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #333;
+            margin: 10px 0;
+        }
+        
+        .sensor-unit {
+            font-size: 1em;
+            color: #666;
+            margin-left: 5px;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-online {
+            background-color: #4CAF50;
+            box-shadow: 0 0 10px #4CAF50;
+        }
+        
+        .status-offline {
+            background-color: #f44336;
+        }
+        
+        .threshold-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-top: 20px;
+        }
+        
+        .threshold-section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .threshold-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group label {
+            color: #666;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .form-group input {
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: 600;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+        
+        .alert {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+            display: none;
+        }
+        
+        .alert.show {
+            display: block;
+        }
+        
+        .alert-danger {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        
+        .timestamp {
+            color: #999;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+        
+        .value-alert {
+            color: #f44336;
+            font-weight: bold;
+        }
+        
+        .value-normal {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🌡️ ESP32 Sensor Data</h1>
+        <div class="nav-buttons">
+            <a href="/" class="btn">🏠 Dashboard</a>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="dashboard-grid">
+            <!-- Temperature Card -->
+            <div class="card">
+                <h2>🌡️ Temperature</h2>
+                <div class="sensor-value">
+                    <span id="temperature" class="value-normal">--</span>
+                    <span class="sensor-unit">°C</span>
+                </div>
+                <div class="timestamp" id="temp-timestamp">--</div>
+            </div>
+            
+            <!-- Humidity Card -->
+            <div class="card">
+                <h2>💧 Humidity</h2>
+                <div class="sensor-value">
+                    <span id="humidity" class="value-normal">--</span>
+                    <span class="sensor-unit">%</span>
+                </div>
+                <div class="timestamp" id="hum-timestamp">--</div>
+            </div>
+            
+            <!-- MQ1 Card -->
+            <div class="card">
+                <h2>🔌 MQ1 Gas Sensor</h2>
+                <div class="sensor-value">
+                    <span id="mq1" class="value-normal">--</span>
+                    <span class="sensor-unit">ADC</span>
+                </div>
+                <div class="timestamp" id="mq1-timestamp">--</div>
+            </div>
+            
+            <!-- MQ2 Card -->
+            <div class="card">
+                <h2>🔌 MQ2 Gas Sensor</h2>
+                <div class="sensor-value">
+                    <span id="mq2" class="value-normal">--</span>
+                    <span class="sensor-unit">ADC</span>
+                </div>
+                <div class="timestamp" id="mq2-timestamp">--</div>
+            </div>
+            
+            <!-- MQ3 Card -->
+            <div class="card">
+                <h2>🔌 MQ3 Gas Sensor</h2>
+                <div class="sensor-value">
+                    <span id="mq3" class="value-normal">--</span>
+                    <span class="sensor-unit">ADC</span>
+                </div>
+                <div class="timestamp" id="mq3-timestamp">--</div>
+            </div>
+            
+            <!-- Dust Card -->
+            <div class="card">
+                <h2>🌫️ Dust Density</h2>
+                <div class="sensor-value">
+                    <span id="dust" class="value-normal">--</span>
+                    <span class="sensor-unit">µg/m³</span>
+                </div>
+                <div class="timestamp" id="dust-timestamp">--</div>
+            </div>
+            
+            <!-- WiFi Signal Card -->
+            <div class="card">
+                <h2>📶 WiFi Signal</h2>
+                <div class="sensor-value">
+                    <span id="wifiSignal" class="value-normal">--</span>
+                    <span class="sensor-unit">dBm</span>
+                </div>
+                <div class="timestamp" id="wifi-timestamp">--</div>
+            </div>
+            
+            <!-- Uptime Card -->
+            <div class="card">
+                <h2>⏱️ Uptime</h2>
+                <div class="sensor-value">
+                    <span id="uptime" class="value-normal">--</span>
+                    <span class="sensor-unit">s</span>
+                </div>
+                <div class="timestamp" id="uptime-timestamp">--</div>
+            </div>
+            
+            <!-- Status Card -->
+            <div class="card">
+                <h2>📡 Connection Status</h2>
+                <div style="margin-top: 20px;">
+                    <span class="status-indicator" id="statusIndicator"></span>
+                    <span id="statusText">Checking...</span>
+                </div>
+                <div class="timestamp" id="lastUpdate">Never</div>
+            </div>
+        </div>
+        
+        <!-- Threshold Settings -->
+        <div class="threshold-section">
+            <h2>⚙️ Sensor Thresholds</h2>
+            <div class="alert" id="alertMessage"></div>
+            <form class="threshold-form" id="thresholdForm">
+                <div class="form-group">
+                    <label for="mq1Threshold">MQ1 Threshold (ADC)</label>
+                    <input type="number" id="mq1Threshold" name="mq1" required>
+                </div>
+                <div class="form-group">
+                    <label for="mq2Threshold">MQ2 Threshold (ADC)</label>
+                    <input type="number" id="mq2Threshold" name="mq2" required>
+                </div>
+                <div class="form-group">
+                    <label for="mq3Threshold">MQ3 Threshold (ADC)</label>
+                    <input type="number" id="mq3Threshold" name="mq3" required>
+                </div>
+                <div class="form-group">
+                    <label for="tempThreshold">Temperature Threshold (°C)</label>
+                    <input type="number" step="0.1" id="tempThreshold" name="temperature" required>
+                </div>
+                <div class="form-group">
+                    <label for="dustThreshold">Dust Threshold (µg/m³)</label>
+                    <input type="number" step="0.1" id="dustThreshold" name="dust" required>
+                </div>
+                <div class="form-group" style="justify-content: flex-end;">
+                    <button type="submit" class="btn-primary">Update Thresholds</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        // Check for browser notification permission
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+        
+        let lastAlertTime = {};
+        const ALERT_COOLDOWN = 10000; // 10 seconds between alerts for same sensor
+        
+        function showNotification(title, message) {
+            if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification(title, {
+                    body: message,
+                    icon: '/favicon.ico',
+                    badge: '/favicon.ico'
+                });
+            }
+        }
+        
+        function formatUptime(seconds) {
+            const days = Math.floor(seconds / 86400);
+            const hours = Math.floor((seconds % 86400) / 3600);
+            const mins = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            
+            if (days > 0) {
+                return `${days}d ${hours}h ${mins}m`;
+            } else if (hours > 0) {
+                return `${hours}h ${mins}m ${secs}s`;
+            } else if (mins > 0) {
+                return `${mins}m ${secs}s`;
+            } else {
+                return `${secs}s`;
+            }
+        }
+        
+        function formatTimestamp(timestamp) {
+            if (!timestamp) return '--';
+            try {
+                const date = new Date(timestamp);
+                return date.toLocaleString();
+            } catch (e) {
+                return timestamp;
+            }
+        }
+        
+        function updateDashboard(data) {
+            // Update sensor values
+            document.getElementById('temperature').textContent = data.temperature !== undefined ? data.temperature.toFixed(1) : '--';
+            document.getElementById('humidity').textContent = data.humidity !== undefined ? data.humidity.toFixed(1) : '--';
+            document.getElementById('mq1').textContent = data.mq1 !== undefined ? data.mq1 : '--';
+            document.getElementById('mq2').textContent = data.mq2 !== undefined ? data.mq2 : '--';
+            document.getElementById('mq3').textContent = data.mq3 !== undefined ? data.mq3 : '--';
+            document.getElementById('dust').textContent = data.dust !== undefined ? data.dust.toFixed(1) : '--';
+            document.getElementById('wifiSignal').textContent = data.wifiSignal !== undefined ? data.wifiSignal : '--';
+            document.getElementById('uptime').textContent = data.uptime !== undefined ? formatUptime(data.uptime) : '--';
+            
+            // Update timestamps
+            const timestamp = formatTimestamp(data.timestamp);
+            document.getElementById('temp-timestamp').textContent = timestamp;
+            document.getElementById('hum-timestamp').textContent = timestamp;
+            document.getElementById('mq1-timestamp').textContent = timestamp;
+            document.getElementById('mq2-timestamp').textContent = timestamp;
+            document.getElementById('mq3-timestamp').textContent = timestamp;
+            document.getElementById('dust-timestamp').textContent = timestamp;
+            document.getElementById('wifi-timestamp').textContent = timestamp;
+            document.getElementById('uptime-timestamp').textContent = timestamp;
+            document.getElementById('lastUpdate').textContent = 'Last update: ' + timestamp;
+            
+            // Update status
+            document.getElementById('statusIndicator').className = 'status-indicator status-online';
+            document.getElementById('statusText').textContent = 'Online';
+            
+            // Check thresholds and highlight alerts
+            checkThresholds(data);
+        }
+        
+        function checkThresholds(data) {
+            fetch('/api/thresholds')
+                .then(response => response.json())
+                .then(thresholds => {
+                    const now = Date.now();
+                    
+                    // Check each sensor against threshold
+                    if (data.mq1 >= thresholds.mq1) {
+                        highlightAlert('mq1', true);
+                        if (!lastAlertTime['mq1'] || (now - lastAlertTime['mq1']) > ALERT_COOLDOWN) {
+                            showNotification('MQ1 Alert', `MQ1 sensor threshold exceeded: ${data.mq1} >= ${thresholds.mq1}`);
+                            lastAlertTime['mq1'] = now;
+                        }
+                    } else {
+                        highlightAlert('mq1', false);
+                    }
+                    
+                    if (data.mq2 >= thresholds.mq2) {
+                        highlightAlert('mq2', true);
+                        if (!lastAlertTime['mq2'] || (now - lastAlertTime['mq2']) > ALERT_COOLDOWN) {
+                            showNotification('MQ2 Alert', `MQ2 sensor threshold exceeded: ${data.mq2} >= ${thresholds.mq2}`);
+                            lastAlertTime['mq2'] = now;
+                        }
+                    } else {
+                        highlightAlert('mq2', false);
+                    }
+                    
+                    if (data.mq3 >= thresholds.mq3) {
+                        highlightAlert('mq3', true);
+                        if (!lastAlertTime['mq3'] || (now - lastAlertTime['mq3']) > ALERT_COOLDOWN) {
+                            showNotification('MQ3 Alert', `MQ3 sensor threshold exceeded: ${data.mq3} >= ${thresholds.mq3}`);
+                            lastAlertTime['mq3'] = now;
+                        }
+                    } else {
+                        highlightAlert('mq3', false);
+                    }
+                    
+                    if (data.temperature >= thresholds.temperature) {
+                        highlightAlert('temperature', true);
+                        if (!lastAlertTime['temperature'] || (now - lastAlertTime['temperature']) > ALERT_COOLDOWN) {
+                            showNotification('Temperature Alert', `Temperature threshold exceeded: ${data.temperature.toFixed(1)}°C >= ${thresholds.temperature}°C`);
+                            lastAlertTime['temperature'] = now;
+                        }
+                    } else {
+                        highlightAlert('temperature', false);
+                    }
+                    
+                    if (data.dust >= thresholds.dust) {
+                        highlightAlert('dust', true);
+                        if (!lastAlertTime['dust'] || (now - lastAlertTime['dust']) > ALERT_COOLDOWN) {
+                            showNotification('Dust Alert', `Dust threshold exceeded: ${data.dust.toFixed(1)} µg/m³ >= ${thresholds.dust} µg/m³`);
+                            lastAlertTime['dust'] = now;
+                        }
+                    } else {
+                        highlightAlert('dust', false);
+                    }
+                })
+                .catch(error => console.error('Error checking thresholds:', error));
+        }
+        
+        function highlightAlert(sensorId, isAlert) {
+            const element = document.getElementById(sensorId);
+            if (element) {
+                if (isAlert) {
+                    element.classList.remove('value-normal');
+                    element.classList.add('value-alert');
+                } else {
+                    element.classList.remove('value-alert');
+                    element.classList.add('value-normal');
+                }
+            }
+        }
+        
+        function loadThresholds() {
+            fetch('/api/thresholds')
+                .then(response => response.json())
+                .then(thresholds => {
+                    document.getElementById('mq1Threshold').value = thresholds.mq1;
+                    document.getElementById('mq2Threshold').value = thresholds.mq2;
+                    document.getElementById('mq3Threshold').value = thresholds.mq3;
+                    document.getElementById('tempThreshold').value = thresholds.temperature;
+                    document.getElementById('dustThreshold').value = thresholds.dust;
+                })
+                .catch(error => console.error('Error loading thresholds:', error));
+        }
+        
+        function fetchLatestData() {
+            fetch('/api/latest')
+                .then(response => response.json())
+                .then(data => {
+                    updateDashboard(data);
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                    document.getElementById('statusIndicator').className = 'status-indicator status-offline';
+                    document.getElementById('statusText').textContent = 'Offline';
+                });
+        }
+        
+        // Handle threshold form submission
+        document.getElementById('thresholdForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const thresholds = {
+                mq1: parseInt(document.getElementById('mq1Threshold').value),
+                mq2: parseInt(document.getElementById('mq2Threshold').value),
+                mq3: parseInt(document.getElementById('mq3Threshold').value),
+                temperature: parseFloat(document.getElementById('tempThreshold').value),
+                dust: parseFloat(document.getElementById('dustThreshold').value)
+            };
+            
+            fetch('/api/thresholds', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(thresholds)
+            })
+            .then(response => response.json())
+            .then(result => {
+                const alertDiv = document.getElementById('alertMessage');
+                if (result.status === 'success') {
+                    alertDiv.className = 'alert alert-success show';
+                    alertDiv.textContent = 'Thresholds updated successfully!';
+                } else {
+                    alertDiv.className = 'alert alert-danger show';
+                    alertDiv.textContent = 'Error: ' + (result.message || 'Failed to update thresholds');
+                }
+                setTimeout(() => {
+                    alertDiv.classList.remove('show');
+                }, 3000);
+            })
+            .catch(error => {
+                const alertDiv = document.getElementById('alertMessage');
+                alertDiv.className = 'alert alert-danger show';
+                alertDiv.textContent = 'Error: ' + error.message;
+                setTimeout(() => {
+                    alertDiv.classList.remove('show');
+                }, 3000);
+            });
+        });
+        
+        // Initial load
+        loadThresholds();
+        fetchLatestData();
+        
+        // Poll for updates every 2 seconds
+        setInterval(fetchLatestData, 2000);
+    </script>
+</body>
+</html>
+
