@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 House Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            color: white;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .wifi-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0,0,0,0.2);
+            padding: 8px 16px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .wifi-icon {
+            font-size: 1.5em;
+        }
+        
+        .wifi-strength {
+            font-size: 0.9em;
+        }
+        
+        .wifi-excellent { color: #4CAF50; }
+        .wifi-good { color: #8BC34A; }
+        .wifi-fair { color: #FFC107; }
+        .wifi-poor { color: #FF9800; }
+        .wifi-weak { color: #f44336; }
+        
+        .btn {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255,255,255,0.3);
+        }
+        
+        .btn-settings {
+            background: #ff9800;
+            color: white;
+        }
+        
+        .btn-settings:hover {
+            background: #f57c00;
+        }
+        
+        .dashboard-container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            position: relative;
+        }
+        
+        .house-map-container {
+            position: relative;
+            width: 100%;
+            min-height: 500px;
+            border: 2px dashed #ddd;
+            border-radius: 10px;
+            background: #f9f9f9;
+            overflow: visible;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        
+        .house-map-image {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            max-height: 600px;
+            object-fit: contain;
+            position: relative;
+        }
+        
+        .sensor-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .sensor-overlay .sensor-marker {
+            pointer-events: all;
+        }
+        
+        .sensor-marker {
+            position: absolute;
+            min-width: 60px;
+            min-height: 60px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: move;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+            transition: transform 0.2s;
+            z-index: 10;
+            padding: 5px;
+            text-align: center;
+        }
+        
+        .sensor-marker:hover {
+            transform: scale(1.1);
+            z-index: 20;
+        }
+        
+        .sensor-marker.mq1 { background: #f44336; }
+        .sensor-marker.mq2 { background: #ff9800; }
+        .sensor-marker.mq3 { background: #ffc107; }
+        .sensor-marker.temperature { background: #2196F3; }
+        .sensor-marker.humidity { background: #00BCD4; }
+        .sensor-marker.dust { background: #9E9E9E; }
+        
+        .sensor-marker-label {
+            font-size: 10px;
+            margin-bottom: 2px;
+            text-transform: uppercase;
+        }
+        
+        .sensor-marker-value {
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .sensor-marker.alert {
+            animation: shake 0.5s infinite;
+            box-shadow: 0 0 30px rgba(244, 67, 54, 1), 0 0 60px rgba(244, 67, 54, 0.6);
+        }
+        
+        .sensor-marker.alert::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            border-radius: 50%;
+            border: 3px solid rgba(244, 67, 54, 0.8);
+            animation: shine 1.5s infinite;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translate(-50%, -50%) translate(0, 0) rotate(0deg); }
+            10% { transform: translate(-50%, -50%) translate(-5px, -3px) rotate(-2deg); }
+            20% { transform: translate(-50%, -50%) translate(5px, 3px) rotate(2deg); }
+            30% { transform: translate(-50%, -50%) translate(-5px, 3px) rotate(-2deg); }
+            40% { transform: translate(-50%, -50%) translate(5px, -3px) rotate(2deg); }
+            50% { transform: translate(-50%, -50%) translate(-3px, 5px) rotate(-1deg); }
+            60% { transform: translate(-50%, -50%) translate(3px, -5px) rotate(1deg); }
+            70% { transform: translate(-50%, -50%) translate(-3px, -5px) rotate(-1deg); }
+            80% { transform: translate(-50%, -50%) translate(3px, 5px) rotate(1deg); }
+            90% { transform: translate(-50%, -50%) translate(-2px, -2px) rotate(-0.5deg); }
+        }
+        
+        @keyframes shine {
+            0% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.5;
+                transform: scale(1.3);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(1.6);
+            }
+        }
+        
+        .sensor-tooltip {
+            position: absolute;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 30;
+            white-space: nowrap;
+            display: none;
+        }
+        
+        .sensor-palette {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 10px;
+        }
+        
+        .sensor-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            cursor: grab;
+            transition: transform 0.2s;
+            min-width: 80px;
+        }
+        
+        .sensor-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .sensor-item:active {
+            cursor: grabbing;
+        }
+        
+        .sensor-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: white;
+            margin-bottom: 5px;
+        }
+        
+        .sensor-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .settings-panel {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .settings-panel.active {
+            display: flex;
+        }
+        
+        .settings-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .settings-content h2 {
+            margin-bottom: 20px;
+            color: #667eea;
+        }
+        
+        .close-btn {
+            float: right;
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        .room-input {
+            margin-bottom: 15px;
+        }
+        
+        .room-input label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        .room-input input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+        
+        .save-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .save-btn:hover {
+            background: #45a049;
+        }
+        
+        .no-image-message {
+            text-align: center;
+            padding: 50px;
+            color: #999;
+        }
+        
+        .upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+        
+        .upload-area:hover {
+            background: #f0f0f0;
+        }
+        
+        .upload-area input[type="file"] {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏠 ESP32 House Dashboard</h1>
+        <div class="nav-buttons">
+            <div class="wifi-indicator" id="wifiIndicator">
+                <span class="wifi-icon">📶</span>
+                <span class="wifi-strength" id="wifiStrength">-- dBm</span>
+            </div>
+            <a href="/sensor-data.html" class="btn">Sensor Data</a>
+            <button class="btn btn-settings" onclick="openSettings()">⚙️ Settings</button>
+        </div>
+    </div>
+    
+    <div class="dashboard-container">
+        <div class="sensor-palette" id="sensorPalette">
+            <div class="sensor-item" draggable="true" data-sensor="mq1">
+                <div class="sensor-icon mq1">MQ1</div>
+                <div class="sensor-label">MQ1 Gas</div>
+            </div>
+            <div class="sensor-item" draggable="true" data-sensor="mq2">
+                <div class="sensor-icon mq2">MQ2</div>
+                <div class="sensor-label">MQ2 Gas</div>
+            </div>
+            <div class="sensor-item" draggable="true" data-sensor="mq3">
+                <div class="sensor-icon mq3">MQ3</div>
+                <div class="sensor-label">MQ3 Gas</div>
+            </div>
+            <div class="sensor-item" draggable="true" data-sensor="temperature">
+                <div class="sensor-icon temperature">🌡️</div>
+                <div class="sensor-label">Temperature</div>
+            </div>
+            <div class="sensor-item" draggable="true" data-sensor="humidity">
+                <div class="sensor-icon humidity">💧</div>
+                <div class="sensor-label">Humidity</div>
+            </div>
+            <div class="sensor-item" draggable="true" data-sensor="dust">
+                <div class="sensor-icon dust">🌫️</div>
+                <div class="sensor-label">Dust</div>
+            </div>
+        </div>
+        
+        <div class="house-map-container" id="houseMapContainer">
+            <img id="houseMapImage" class="house-map-image" src="" alt="House Map" onload="updateSensorPositions()">
+            <div class="sensor-overlay" id="sensorOverlay"></div>
+            <div class="no-image-message" id="noImageMessage">
+                <p>No house map image loaded</p>
+                <p style="font-size: 0.9em; margin-top: 10px;">Upload a house map image in settings</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="sensor-tooltip" id="sensorTooltip"></div>
+    
+    <div class="settings-panel" id="settingsPanel">
+        <div class="settings-content">
+            <button class="close-btn" onclick="closeSettings()">✕ Close</button>
+            <h2>⚙️ Settings</h2>
+            
+            <div class="upload-area" onclick="document.getElementById('imageUpload').click()">
+                <p>📷 Click to upload house map image</p>
+                <p style="font-size: 0.9em; color: #999; margin-top: 5px;">PNG, JPG, or GIF format</p>
+                <input type="file" id="imageUpload" accept="image/*" onchange="handleImageUpload(event)">
+            </div>
+            
+            <div class="room-input">
+                <label>Room Name (for new sensors)</label>
+                <input type="text" id="roomNameInput" placeholder="e.g., Living Room, Bedroom, Kitchen">
+            </div>
+            
+            <button class="save-btn" onclick="saveSettings()">💾 Save Settings</button>
+        </div>
+    </div>
+    
+    <script>
+        let sensorData = {};
+        let sensorPositions = {};
+        let draggedSensor = null;
+        let currentRoomName = "Living Room";
+        let houseMapImage = null;
+        
+        // Load house map image from localStorage
+        function loadHouseMapImage() {
+            const savedImage = localStorage.getItem('houseMapImage');
+            if (savedImage) {
+                const img = document.getElementById('houseMapImage');
+                img.src = savedImage;
+                img.style.display = 'block';
+                document.getElementById('noImageMessage').style.display = 'none';
+            }
+        }
+        
+        // Handle image upload
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = document.getElementById('houseMapImage');
+                    img.src = e.target.result;
+                    img.style.display = 'block';
+                    document.getElementById('noImageMessage').style.display = 'none';
+                    localStorage.setItem('houseMapImage', e.target.result);
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        // Drag and drop handlers
+        document.querySelectorAll('.sensor-item').forEach(item => {
+            item.addEventListener('dragstart', (e) => {
+                draggedSensor = e.target.dataset.sensor;
+                e.dataTransfer.effectAllowed = 'move';
+            });
+        });
+        
+        const houseMapContainer = document.getElementById('houseMapContainer');
+        
+        houseMapContainer.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        });
+        
+        houseMapContainer.addEventListener('drop', (e) => {
+            e.preventDefault();
+            if (!draggedSensor) return;
+            
+            const img = document.getElementById('houseMapImage');
+            if (!img.complete || img.naturalWidth === 0) {
+                alert('Please wait for the image to load first');
+                draggedSensor = null;
+                return;
+            }
+            
+            // Calculate position based on image, not container
+            const imgRect = img.getBoundingClientRect();
+            
+            // Get image's actual displayed dimensions
+            const imgDisplayWidth = imgRect.width;
+            const imgDisplayHeight = imgRect.height;
+            
+            // Calculate position relative to image (0-100%)
+            const x = ((e.clientX - imgRect.left) / imgDisplayWidth) * 100;
+            const y = ((e.clientY - imgRect.top) / imgDisplayHeight) * 100;
+            
+            // Clamp to image bounds (0-100%)
+            const clampedX = Math.max(0, Math.min(100, x));
+            const clampedY = Math.max(0, Math.min(100, y));
+            
+            const roomName = document.getElementById('roomNameInput').value || currentRoomName;
+            
+            placeSensor(draggedSensor, clampedX, clampedY, roomName);
+            draggedSensor = null;
+        });
+        
+        // Place sensor on map
+        function placeSensor(sensorId, x, y, roomName) {
+            // Remove existing marker if any
+            const existing = document.querySelector(`.sensor-marker[data-sensor="${sensorId}"]`);
+            if (existing) {
+                existing.remove();
+            }
+            
+            // Create new marker
+            const marker = document.createElement('div');
+            marker.className = `sensor-marker ${sensorId}`;
+            marker.dataset.sensor = sensorId;
+            marker.dataset.x = x;
+            marker.dataset.y = y;
+            marker.dataset.room = roomName;
+            
+            // Position will be calculated based on image
+            updateMarkerPosition(marker);
+            
+            // Create label and value elements
+            const label = document.createElement('div');
+            label.className = 'sensor-marker-label';
+            const icons = {
+                'mq1': 'MQ1',
+                'mq2': 'MQ2',
+                'mq3': 'MQ3',
+                'temperature': '🌡️',
+                'humidity': '💧',
+                'dust': '🌫️'
+            };
+            label.textContent = icons[sensorId] || sensorId;
+            
+            const value = document.createElement('div');
+            value.className = 'sensor-marker-value';
+            value.id = `sensor-value-${sensorId}`;
+            value.textContent = '--';
+            
+            marker.appendChild(label);
+            marker.appendChild(value);
+            
+            // Make draggable
+            marker.draggable = true;
+            marker.addEventListener('dragstart', (e) => {
+                e.dataTransfer.effectAllowed = 'move';
+            });
+            
+            // Tooltip on hover
+            marker.addEventListener('mouseenter', (e) => {
+                showTooltip(e, sensorId, roomName);
+            });
+            marker.addEventListener('mouseleave', () => {
+                hideTooltip();
+            });
+            
+            // Update position on drag
+            marker.addEventListener('dragend', (e) => {
+                const img = document.getElementById('houseMapImage');
+                if (!img.complete || img.naturalWidth === 0) return;
+                
+                const imgRect = img.getBoundingClientRect();
+                const containerRect = houseMapContainer.getBoundingClientRect();
+                
+                // Get image's actual displayed dimensions
+                const imgDisplayWidth = imgRect.width;
+                const imgDisplayHeight = imgRect.height;
+                
+                // Calculate offset from container to image
+                const offsetX = imgRect.left - containerRect.left;
+                const offsetY = imgRect.top - containerRect.top;
+                
+                // Calculate position relative to image (0-100%)
+                const newX = ((e.clientX - imgRect.left) / imgDisplayWidth) * 100;
+                const newY = ((e.clientY - imgRect.top) / imgDisplayHeight) * 100;
+                
+                // Clamp to image bounds (0-100%)
+                const clampedX = Math.max(0, Math.min(100, newX));
+                const clampedY = Math.max(0, Math.min(100, newY));
+                
+                marker.dataset.x = clampedX;
+                marker.dataset.y = clampedY;
+                updateMarkerPosition(marker);
+                saveSensorPosition(sensorId, clampedX, clampedY, roomName);
+            });
+            
+            document.getElementById('sensorOverlay').appendChild(marker);
+            
+            // Save position
+            saveSensorPosition(sensorId, x, y, roomName);
+        }
+        
+        // Update marker position based on image dimensions
+        function updateMarkerPosition(marker) {
+            const img = document.getElementById('houseMapImage');
+            if (!img.complete || img.naturalWidth === 0) {
+                // If image not loaded, position relative to container
+                const x = parseFloat(marker.dataset.x);
+                const y = parseFloat(marker.dataset.y);
+                marker.style.left = x + '%';
+                marker.style.top = y + '%';
+                marker.style.transform = 'translate(-50%, -50%)';
+                return;
+            }
+            
+            const imgRect = img.getBoundingClientRect();
+            const containerRect = houseMapContainer.getBoundingClientRect();
+            
+            // Get image's actual displayed dimensions
+            const imgDisplayWidth = imgRect.width;
+            const imgDisplayHeight = imgRect.height;
+            
+            // Calculate offset from container top-left to image top-left
+            const offsetX = imgRect.left - containerRect.left;
+            const offsetY = imgRect.top - containerRect.top;
+            
+            // Get stored position as percentage of image (0-100%)
+            const x = parseFloat(marker.dataset.x);
+            const y = parseFloat(marker.dataset.y);
+            
+            // Calculate absolute pixel position
+            const pixelX = offsetX + (imgDisplayWidth * x / 100);
+            const pixelY = offsetY + (imgDisplayHeight * y / 100);
+            
+            // Position marker absolutely relative to container
+            marker.style.position = 'absolute';
+            marker.style.left = pixelX + 'px';
+            marker.style.top = pixelY + 'px';
+            marker.style.transform = 'translate(-50%, -50%)';
+        }
+        
+        // Update all sensor positions when image loads or window resizes
+        function updateSensorPositions() {
+            document.querySelectorAll('.sensor-marker').forEach(marker => {
+                updateMarkerPosition(marker);
+            });
+        }
+        
+        // Update positions on window resize (with debounce for performance)
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(updateSensorPositions, 100);
+        });
+        
+        // Also update when image loads
+        const img = document.getElementById('houseMapImage');
+        if (img) {
+            img.addEventListener('load', updateSensorPositions);
+        }
+        
+        // Show tooltip
+        function showTooltip(e, sensorId, roomName) {
+            const tooltip = document.getElementById('sensorTooltip');
+            let text = `${sensorId.toUpperCase()}`;
+            if (roomName) text += ` - ${roomName}`;
+            
+            if (sensorId === 'mq1' && sensorData.mq1 !== undefined) {
+                text += `<br>Value: ${sensorData.mq1}`;
+            } else if (sensorId === 'mq2' && sensorData.mq2 !== undefined) {
+                text += `<br>Value: ${sensorData.mq2}`;
+            } else if (sensorId === 'mq3' && sensorData.mq3 !== undefined) {
+                text += `<br>Value: ${sensorData.mq3}`;
+            } else if (sensorId === 'temperature' && sensorData.temperature !== undefined) {
+                text += `<br>Value: ${sensorData.temperature.toFixed(1)}°C`;
+            } else if (sensorId === 'humidity' && sensorData.humidity !== undefined) {
+                text += `<br>Value: ${sensorData.humidity.toFixed(1)}%`;
+            } else if (sensorId === 'dust' && sensorData.dust !== undefined) {
+                text += `<br>Value: ${sensorData.dust.toFixed(1)} µg/m³`;
+            }
+            
+            tooltip.innerHTML = text;
+            tooltip.style.display = 'block';
+            tooltip.style.left = (e.clientX + 10) + 'px';
+            tooltip.style.top = (e.clientY + 10) + 'px';
+        }
+        
+        function hideTooltip() {
+            document.getElementById('sensorTooltip').style.display = 'none';
+        }
+        
+        // Save sensor position to server
+        function saveSensorPosition(sensorId, x, y, roomName) {
+            const position = {
+                sensorId: sensorId,
+                roomName: roomName,
+                x: x,
+                y: y
+            };
+            
+            sensorPositions[sensorId] = position;
+            
+            fetch('/api/sensor-positions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(position)
+            })
+            .then(response => response.json())
+            .then(result => {
+                console.log('Position saved:', result);
+            })
+            .catch(error => {
+                console.error('Error saving position:', error);
+            });
+        }
+        
+        // Load sensor positions from server
+        function loadSensorPositions() {
+            fetch('/api/sensor-positions')
+                .then(response => response.json())
+                .then(positions => {
+                    sensorPositions = positions || {};
+                    // Render markers
+                    Object.values(sensorPositions).forEach(pos => {
+                        placeSensor(pos.sensorId, pos.x, pos.y, pos.roomName);
+                    });
+                    // Update positions after a short delay to ensure image is loaded
+                    setTimeout(updateSensorPositions, 100);
+                })
+                .catch(error => {
+                    console.error('Error loading positions:', error);
+                });
+        }
+        
+        // Load sensor data and update markers
+        function loadSensorData() {
+            fetch('/api/latest')
+                .then(response => response.json())
+                .then(data => {
+                    sensorData = data;
+                    updateSensorMarkers(data);
+                    updateWiFiSignal(data);
+                })
+                .catch(error => {
+                    console.error('Error loading sensor data:', error);
+                });
+        }
+        
+        // Update sensor markers with alert status and values
+        function updateSensorMarkers(data) {
+            fetch('/api/thresholds')
+                .then(response => response.json())
+                .then(thresholds => {
+                    Object.keys(sensorPositions).forEach(sensorId => {
+                        const marker = document.querySelector(`.sensor-marker[data-sensor="${sensorId}"]`);
+                        if (marker) {
+                            let isAlert = false;
+                            let value = '--';
+                            let unit = '';
+                            
+                            // Update value display
+                            if (sensorId === 'mq1') {
+                                value = data.mq1 !== undefined ? data.mq1 : '--';
+                                if (data.mq1 >= thresholds.mq1) isAlert = true;
+                            } else if (sensorId === 'mq2') {
+                                value = data.mq2 !== undefined ? data.mq2 : '--';
+                                if (data.mq2 >= thresholds.mq2) isAlert = true;
+                            } else if (sensorId === 'mq3') {
+                                value = data.mq3 !== undefined ? data.mq3 : '--';
+                                if (data.mq3 >= thresholds.mq3) isAlert = true;
+                            } else if (sensorId === 'temperature') {
+                                value = data.temperature !== undefined ? data.temperature.toFixed(1) : '--';
+                                unit = '°C';
+                                if (data.temperature >= thresholds.temperature) isAlert = true;
+                            } else if (sensorId === 'humidity') {
+                                value = data.humidity !== undefined ? data.humidity.toFixed(1) : '--';
+                                unit = '%';
+                            } else if (sensorId === 'dust') {
+                                value = data.dust !== undefined ? data.dust.toFixed(1) : '--';
+                                unit = 'µg';
+                                if (data.dust >= thresholds.dust) isAlert = true;
+                            }
+                            
+                            // Update value display
+                            const valueElement = marker.querySelector('.sensor-marker-value');
+                            if (valueElement) {
+                                valueElement.textContent = value + (unit ? unit : '');
+                            }
+                            
+                            // Update alert status
+                            if (isAlert) {
+                                marker.classList.add('alert');
+                            } else {
+                                marker.classList.remove('alert');
+                            }
+                        }
+                    });
+                })
+                .catch(error => console.error('Error checking thresholds:', error));
+        }
+        
+        // Update WiFi signal strength
+        function updateWiFiSignal(data) {
+            const wifiElement = document.getElementById('wifiStrength');
+            const wifiIcon = document.querySelector('.wifi-icon');
+            
+            if (data.wifiSignal !== undefined) {
+                const dbm = data.wifiSignal;
+                wifiElement.textContent = dbm + ' dBm';
+                
+                // Remove all strength classes
+                wifiElement.classList.remove('wifi-excellent', 'wifi-good', 'wifi-fair', 'wifi-poor', 'wifi-weak');
+                
+                // Add appropriate class based on signal strength
+                if (dbm >= -50) {
+                    wifiElement.classList.add('wifi-excellent');
+                    wifiIcon.textContent = '📶';
+                } else if (dbm >= -60) {
+                    wifiElement.classList.add('wifi-good');
+                    wifiIcon.textContent = '📶';
+                } else if (dbm >= -70) {
+                    wifiElement.classList.add('wifi-fair');
+                    wifiIcon.textContent = '📶';
+                } else if (dbm >= -80) {
+                    wifiElement.classList.add('wifi-poor');
+                    wifiIcon.textContent = '📶';
+                } else {
+                    wifiElement.classList.add('wifi-weak');
+                    wifiIcon.textContent = '📶';
+                }
+            } else {
+                wifiElement.textContent = '-- dBm';
+            }
+        }
+        
+        // Settings panel
+        function openSettings() {
+            document.getElementById('settingsPanel').classList.add('active');
+        }
+        
+        function closeSettings() {
+            document.getElementById('settingsPanel').classList.remove('active');
+        }
+        
+        function saveSettings() {
+            currentRoomName = document.getElementById('roomNameInput').value || currentRoomName;
+            closeSettings();
+        }
+        
+        // Initialize
+        loadHouseMapImage();
+        loadSensorPositions();
+        loadSensorData();
+        
+        // Update sensor data every 2 seconds
+        setInterval(() => {
+            loadSensorData();
+        }, 2000);
+        
+        // Close settings on outside click
+        document.getElementById('settingsPanel').addEventListener('click', (e) => {
+            if (e.target.id === 'settingsPanel') {
+                closeSettings();
+            }
+        });
+    </script>
+</body>
+</html>

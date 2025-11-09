@@ -1,0 +1,14 @@
+com\esp32\model\SensorPosition.class
+com\esp32\service\DataService.class
+com\esp32\server\EmbeddedServer.class
+com\esp32\model\Thresholds.class
+com\esp32\model\SensorData.class
+com\esp32\servlet\DataServlet.class
+com\esp32\servlet\SensorPositionServlet.class
+com\esp32\servlet\DashboardServlet.class
+com\esp32\servlet\SensorPositionServlet$1.class
+com\esp32\servlet\PollServlet.class
+com\esp32\filter\CORSFilter.class
+com\esp32\servlet\LatestDataServlet.class
+com\esp32\servlet\SensorDataServlet.class
+com\esp32\servlet\ThresholdServlet.class

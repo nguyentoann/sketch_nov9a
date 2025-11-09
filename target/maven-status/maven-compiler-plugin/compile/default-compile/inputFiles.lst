@@ -1,0 +1,13 @@
+C:\Users\cuuto\Documents\Arduino\sketch_nov9a\src\main\java\com\esp32\servlet\ThresholdServlet.java
+C:\Users\cuuto\Documents\Arduino\sketch_nov9a\src\main\java\com\esp32\servlet\DashboardServlet.java
+C:\Users\cuuto\Documents\Arduino\sketch_nov9a\src\main\java\com\esp32\model\Thresholds.java
+C:\Users\cuuto\Documents\Arduino\sketch_nov9a\src\main\java\com\esp32\servlet\SensorPositionServlet.java
+C:\Users\cuuto\Documents\Arduino\sketch_nov9a\src\main\java\com\esp32\servlet\SensorDataServlet.java
+C:\Users\cuuto\Documents\Arduino\sketch_nov9a\src\main\java\com\esp32\model\SensorData.java
+C:\Users\cuuto\Documents\Arduino\sketch_nov9a\src\main\java\com\esp32\servlet\DataServlet.java
+C:\Users\cuuto\Documents\Arduino\sketch_nov9a\src\main\java\com\esp32\servlet\PollServlet.java
+C:\Users\cuuto\Documents\Arduino\sketch_nov9a\src\main\java\com\esp32\model\SensorPosition.java
+C:\Users\cuuto\Documents\Arduino\sketch_nov9a\src\main\java\com\esp32\servlet\LatestDataServlet.java
+C:\Users\cuuto\Documents\Arduino\sketch_nov9a\src\main\java\com\esp32\filter\CORSFilter.java
+C:\Users\cuuto\Documents\Arduino\sketch_nov9a\src\main\java\com\esp32\server\EmbeddedServer.java
+C:\Users\cuuto\Documents\Arduino\sketch_nov9a\src\main\java\com\esp32\service\DataService.java
