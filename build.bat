@@ -45,11 +45,14 @@ if not exist "target\lib\gson-2.10.1.jar" (
     echo Downloading Jetty Util Ajax...
     curl -L -o jetty-util-ajax-9.4.51.v20230217.jar https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-util-ajax/9.4.51.v20230217/jetty-util-ajax-9.4.51.v20230217.jar
     
+    echo Downloading Jetty Security...
+    curl -L -o jetty-security-9.4.51.v20230217.jar https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-security/9.4.51.v20230217/jetty-security-9.4.51.v20230217.jar
+    
     cd ..\..
 )
 
 REM Build classpath (include all Jetty dependencies)
-set CLASSPATH=target\lib\servlet-api-4.0.1.jar;target\lib\gson-2.10.1.jar;target\lib\jetty-util-9.4.51.v20230217.jar;target\lib\jetty-io-9.4.51.v20230217.jar;target\lib\jetty-http-9.4.51.v20230217.jar;target\lib\jetty-xml-9.4.51.v20230217.jar;target\lib\jetty-server-9.4.51.v20230217.jar;target\lib\jetty-servlet-9.4.51.v20230217.jar;target\lib\jetty-webapp-9.4.51.v20230217.jar;target\lib\jetty-util-ajax-9.4.51.v20230217.jar
+set CLASSPATH=target\lib\servlet-api-4.0.1.jar;target\lib\gson-2.10.1.jar;target\lib\jetty-util-9.4.51.v20230217.jar;target\lib\jetty-io-9.4.51.v20230217.jar;target\lib\jetty-http-9.4.51.v20230217.jar;target\lib\jetty-xml-9.4.51.v20230217.jar;target\lib\jetty-server-9.4.51.v20230217.jar;target\lib\jetty-servlet-9.4.51.v20230217.jar;target\lib\jetty-webapp-9.4.51.v20230217.jar;target\lib\jetty-util-ajax-9.4.51.v20230217.jar;target\lib\jetty-security-9.4.51.v20230217.jar
 
 echo Compiling Java sources...
 REM Compile all Java files at once to handle dependencies
@@ -67,7 +70,7 @@ if not exist "target\META-INF" mkdir target\META-INF
 (
 echo Manifest-Version: 1.0
 echo Main-Class: com.esp32.server.EmbeddedServer
-echo Class-Path: lib/servlet-api-4.0.1.jar lib/gson-2.10.1.jar lib/jetty-util-9.4.51.v20230217.jar lib/jetty-io-9.4.51.v20230217.jar lib/jetty-http-9.4.51.v20230217.jar lib/jetty-xml-9.4.51.v20230217.jar lib/jetty-server-9.4.51.v20230217.jar lib/jetty-servlet-9.4.51.v20230217.jar lib/jetty-webapp-9.4.51.v20230217.jar lib/jetty-util-ajax-9.4.51.v20230217.jar
+echo Class-Path: lib/servlet-api-4.0.1.jar lib/gson-2.10.1.jar lib/jetty-util-9.4.51.v20230217.jar lib/jetty-io-9.4.51.v20230217.jar lib/jetty-http-9.4.51.v20230217.jar lib/jetty-xml-9.4.51.v20230217.jar lib/jetty-server-9.4.51.v20230217.jar lib/jetty-servlet-9.4.51.v20230217.jar lib/jetty-webapp-9.4.51.v20230217.jar lib/jetty-util-ajax-9.4.51.v20230217.jar lib/jetty-security-9.4.51.v20230217.jar
 ) > target\META-INF\MANIFEST.MF
 
 echo Creating executable JAR...
