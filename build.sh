@@ -21,6 +21,21 @@ if [ ! -f "target/lib/gson-2.10.1.jar" ]; then
     echo "Downloading Gson..."
     curl -L -o gson-2.10.1.jar https://repo1.maven.org/maven2/com/google/code/gson/gson/2.10.1/gson-2.10.1.jar
     
+    echo "Downloading Servlet API..."
+    curl -L -o servlet-api-4.0.1.jar https://repo1.maven.org/maven2/javax/servlet/javax.servlet-api/4.0.1/javax.servlet-api-4.0.1.jar
+    
+    echo "Downloading Jetty Util..."
+    curl -L -o jetty-util-9.4.51.v20230217.jar https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-util/9.4.51.v20230217/jetty-util-9.4.51.v20230217.jar
+    
+    echo "Downloading Jetty IO..."
+    curl -L -o jetty-io-9.4.51.v20230217.jar https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-io/9.4.51.v20230217/jetty-io-9.4.51.v20230217.jar
+    
+    echo "Downloading Jetty HTTP..."
+    curl -L -o jetty-http-9.4.51.v20230217.jar https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-http/9.4.51.v20230217/jetty-http-9.4.51.v20230217.jar
+    
+    echo "Downloading Jetty XML..."
+    curl -L -o jetty-xml-9.4.51.v20230217.jar https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-xml/9.4.51.v20230217/jetty-xml-9.4.51.v20230217.jar
+    
     echo "Downloading Jetty Server..."
     curl -L -o jetty-server-9.4.51.v20230217.jar https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-server/9.4.51.v20230217/jetty-server-9.4.51.v20230217.jar
     
@@ -30,14 +45,14 @@ if [ ! -f "target/lib/gson-2.10.1.jar" ]; then
     echo "Downloading Jetty Webapp..."
     curl -L -o jetty-webapp-9.4.51.v20230217.jar https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-webapp/9.4.51.v20230217/jetty-webapp-9.4.51.v20230217.jar
     
-    echo "Downloading Servlet API..."
-    curl -L -o servlet-api-4.0.1.jar https://repo1.maven.org/maven2/javax/servlet/javax.servlet-api/4.0.1/javax.servlet-api-4.0.1.jar
+    echo "Downloading Jetty Util Ajax..."
+    curl -L -o jetty-util-ajax-9.4.51.v20230217.jar https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-util-ajax/9.4.51.v20230217/jetty-util-ajax-9.4.51.v20230217.jar
     
     cd ../..
 fi
 
-# Build classpath
-CLASSPATH="target/lib/servlet-api-4.0.1.jar:target/lib/gson-2.10.1.jar:target/lib/jetty-server-9.4.51.v20230217.jar:target/lib/jetty-servlet-9.4.51.v20230217.jar:target/lib/jetty-webapp-9.4.51.v20230217.jar"
+# Build classpath (include all Jetty dependencies)
+CLASSPATH="target/lib/servlet-api-4.0.1.jar:target/lib/gson-2.10.1.jar:target/lib/jetty-util-9.4.51.v20230217.jar:target/lib/jetty-io-9.4.51.v20230217.jar:target/lib/jetty-http-9.4.51.v20230217.jar:target/lib/jetty-xml-9.4.51.v20230217.jar:target/lib/jetty-server-9.4.51.v20230217.jar:target/lib/jetty-servlet-9.4.51.v20230217.jar:target/lib/jetty-webapp-9.4.51.v20230217.jar:target/lib/jetty-util-ajax-9.4.51.v20230217.jar"
 
 # Find all Java files
 JAVA_FILES=$(find src/main/java -name "*.java")
@@ -58,7 +73,7 @@ mkdir -p target/META-INF
 cat > target/META-INF/MANIFEST.MF << EOF
 Manifest-Version: 1.0
 Main-Class: com.esp32.server.EmbeddedServer
-Class-Path: lib/gson-2.10.1.jar lib/jetty-server-9.4.51.v20230217.jar lib/jetty-servlet-9.4.51.v20230217.jar lib/jetty-webapp-9.4.51.v20230217.jar lib/servlet-api-4.0.1.jar
+Class-Path: lib/servlet-api-4.0.1.jar lib/gson-2.10.1.jar lib/jetty-util-9.4.51.v20230217.jar lib/jetty-io-9.4.51.v20230217.jar lib/jetty-http-9.4.51.v20230217.jar lib/jetty-xml-9.4.51.v20230217.jar lib/jetty-server-9.4.51.v20230217.jar lib/jetty-servlet-9.4.51.v20230217.jar lib/jetty-webapp-9.4.51.v20230217.jar lib/jetty-util-ajax-9.4.51.v20230217.jar
 EOF
 
 echo "Creating executable JAR..."
